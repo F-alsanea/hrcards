@@ -97,16 +97,17 @@ const App: React.FC = () => {
     return val
       .trim()
       .toLowerCase()
+      .replace(/[:?؟,.،\-]/g, "") // Remove common punctuation
       .replace(/[\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, "") // Remove Tashkeel
       .replace(/[أإآ]/g, "ا") // Normalize Alef
       .replace(/ة/g, "ه") // Normalize Taa Marbuta
-      .replace(/ى/g, "ي"); // Normalize Alef Maqsura (optional but helpful)
+      .replace(/ى/g, "ي"); // Normalize Alef Maqsura
   };
 
   const findVal = (row: any, keywords: string[]) => {
     const keys = Object.keys(row);
 
-    // 1. Exact match (normalized)
+    // 1. Exact match (normalized) looking for specific user headers first
     const exactKey = keys.find(k => keywords.some(kw => normalizeValues(k) === normalizeValues(kw)));
     if (exactKey) return String(row[exactKey]);
 
@@ -118,11 +119,9 @@ const App: React.FC = () => {
     }));
 
     if (partialKey) {
-      console.log(`Matched partial key: '${partialKey}' for keywords: [${keywords.join(', ')}]`);
       return String(row[partialKey]);
     }
 
-    console.warn(`No match found for keywords: [${keywords.join(', ')}]. Available keys:`, keys);
     return "-";
   };
 
@@ -149,7 +148,7 @@ const App: React.FC = () => {
           const text = e.target?.result as string;
           const workbook = XLSX.read(text, { type: 'string' });
           const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
+          const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
           jsonData = XLSX.utils.sheet_to_json(worksheet);
         }
 
@@ -158,42 +157,42 @@ const App: React.FC = () => {
           return;
         }
 
-        console.log("First row keys:", Object.keys(jsonData[0])); // Debug log
+        console.log("Found Headers:", Object.keys(jsonData[0])); // Debug headers
 
         newCandidates = jsonData.map((row, index) => ({
           id: Date.now() + index + Math.random(), // Ensure uniqueness
-          fullName: findVal(row, ["الاسم الكامل", "الاسم", "Name", "Full Name", "اسم المرشح", "Candidate Name"]),
-          phone: findVal(row, ["رقم الجوال", "الجوال", "الهاتف", "Mobile", "Phone", "Cell", "Mobile Number"]),
-          age: findVal(row, ["العمر", "Age", "السن"]),
-          nationality: findVal(row, ["الجنسية", "Nationality", "Country"]),
-          residencyStatus: findVal(row, ["حالة الإقامة", "الإقامة", "Residency", "حالة الاقامة", "نوع الإقامة"]),
-          jobAppliedFor: findVal(row, ["الوظيفة", "المسمى الوظيفي", "Job", "Position", "Applied Position", "الوظيفة المراد التقدم عليها"]),
-          currentlyEmployed: findVal(row, ["على رأس العمل", "Employed", "Current Employment"]),
-          fullTimeAvailability: findVal(row, ["تفرغ", "Availability", "Available", "هل أنت متفرغ", "هل انت متفرغ للعمل"]),
-          militaryStatus: findVal(row, ["الحالة المهنية", "Status", "Military Status", "المهنة", "حالتك المهنية في الاحوال المدنية"]),
-          socialStatus: findVal(row, ["الحالة الاجتماعية", "Social", "Marital Status"]),
-          yearsOfExperience: findVal(row, ["سنوات الخبرة", "الخبرة", "Experience", "Years of Experience", "Total Experience", "عدد سنوات الخبرة"]),
-          workedHajj: findVal(row, ["حج", "Hajj", "خبرة حج", "موسم الحج", "هل سبق وعملت في موسم الحج"]),
-          hasHealthCard: findVal(row, ["كرت صحي", "Health Card", "بطاقة صحية", "هل يوجد كرت صحي"]),
-          lastSalary: findVal(row, ["آخر راتب", "الراتب", "Salary", "Last Salary", "Current Salary", "اخر راتب لك"]),
-          hasTransportation: findVal(row, ["مواصلات", "Transportation", "سيارة", "Car", "هل يتوفر مواصلات"]),
-          englishLevel: findVal(row, ["مستوى اللغة", "اللغة الإنجليزية", "English", "English Level", "مستوى اجادة اللغة الانجليزية"]),
-          willingToWorkReqs: findVal(row, ["متطلبات العمل", "Requirements", "موافق على الشروط", "مستعد لمتطلبات العمل"]),
-          housingInfo: findVal(row, ["معلومات السكن", "السكن", "Housing", "Location", "Residence"]),
-          willingToInterviewInJeddah: findVal(row, ["جدة", "Jeddah", "مقابلة جدة", "هل انت مستعد لعمل المقابلة في جدة"]),
-          education: findVal(row, ["التعليم", "المؤهل", "Education", "Degree", "Qualification", "المؤهل العلمي"]),
+          fullName: findVal(row, ["الاسم الكامل", "الاسم الكامل:", "الاسم", "Name", "Full Name", "اسم المرشح", "Candidate Name"]),
+          phone: findVal(row, ["رقم الجوال:", "رقم الجوال", "الجوال", "الهاتف", "Mobile", "Phone", "Cell", "Mobile Number"]),
+          age: findVal(row, ["العمر ؟", "العمر", "Age", "السن"]),
+          nationality: findVal(row, ["الجنسية:", "الجنسية", "Nationality", "Country"]),
+          residencyStatus: findVal(row, ["حالة الاقامة", "حالة الإقامة", "الإقامة", "Residency", "Iqama Status", "نوع الإقامة"]),
+          jobAppliedFor: findVal(row, ["الوظيفة المراد التقدم عليها", "الوظيفة", "المسمى الوظيفي", "Job", "Position", "Applied Position", "الوظيفة المتقدم عليها"]),
+          currentlyEmployed: findVal(row, ["على رأس العمل ؟", "على رأس العمل", "Employed", "Current Employment"]),
+          fullTimeAvailability: findVal(row, ["هل انت متفرغ للعمل؟", "تفرغ", "Availability", "Available", "هل أنت متفرغ"]),
+          militaryStatus: findVal(row, ["حالتك المهنية في الاحوال المدنية ؟", "الحالة المهنية", "Status", "Military Status", "المهنة"]),
+          socialStatus: findVal(row, ["الحالة الاجتماعية :", "الحالة الاجتماعية", "Social", "Marital Status"]),
+          yearsOfExperience: findVal(row, ["عدد سنوات الخبرة :", "سنوات الخبرة", "الخبرة", "Experience", "Years of Experience", "Total Experience"]),
+          workedHajj: findVal(row, ["هل سبق وعملت في موسم الحج ؟", "حج", "Hajj", "خبرة حج", "موسم الحج"]),
+          hasHealthCard: findVal(row, ["هل يوجد كرت صحي؟", "كرت صحي", "Health Card", "بطاقة صحية"]),
+          lastSalary: findVal(row, ["اخر راتب لك ؟", "آخر راتب", "الراتب", "Salary", "Last Salary", "Current Salary"]),
+          hasTransportation: findVal(row, ["هل يتوفر مواصلات ؟", "مواصلات", "Transportation", "سيارة", "Car"]),
+          englishLevel: findVal(row, ["مستوى اجادة اللغة الانجليزية", "مستوى اللغة", "اللغة الإنجليزية", "English", "English Level"]),
+          willingToWorkReqs: findVal(row, ["مستعد لمتطلبات العمل؟", "متطلبات العمل", "Requirements", "موافق على الشروط"]),
+          housingInfo: findVal(row, ["معلومات السكن", "معلومات السكن", "السكن", "Housing", "Location", "Residence"]),
+          willingToInterviewInJeddah: findVal(row, ["هل انت مستعد لعمل المقابلة في جدة ؟", "جدة", "Jeddah", "مقابلة جدة"]),
+          education: findVal(row, ["المؤهل العلمي", "التعليم", "المؤهل", "Education", "Degree", "Qualification"]),
         }));
 
-        setCandidates(prev => [...prev, ...newCandidates]); // Append new data
+        setCandidates(prev => [...prev, ...newCandidates]);
         setSelectedIndex(candidates.length);
         setViewMode(ViewMode.LIST);
-        alert(`تم بنجاح معالجة البيانات واستيراد ${newCandidates.length} مرشح!`);
+        // Removed alert to check if it helps with the 'clear' issue feeling unresponsive
+        console.log(`Imported ${newCandidates.length} candidates`);
       } catch (err) {
         console.error("Excel processing error:", err);
         alert("حدث خطأ أثناء قراءة الملف، يرجى التأكد من الصيغة.");
       }
     };
-
 
     if (fileExt === 'xlsx' || fileExt === 'xls') {
       reader.readAsArrayBuffer(file);

@@ -1,2 +1,65 @@
 /* Main CSS File */
 /* Tailwind is currently handled via CDN in index.html, but this file is required by the current HTML structure. */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Hide UI elements */
+  .no-print, 
+  header, 
+  aside, 
+  button, 
+  input, 
+  .blob,
+  *[class*="glass-card"]:not(.candidate-card), /* Hide other glass cards except the candidate card */
+  .shadow-2xl /* Remove heavy shadows from container if any */
+  {
+    display: none !important;
+  }
+
+  /* Reset Main Container */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Candidate Card Specifics */
+  .candidate-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important; /* Add padding for printable area */
+    border: 1px solid black !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    visibility: visible !important;
+  }
+
+  /* Ensure backgrounds print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Helper to ensure text is black */
+  .print\:text-black {
+    color: black !important;
+  }
+}
