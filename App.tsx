@@ -93,7 +93,15 @@ const App: React.FC = () => {
   };
 
   // Helper to normalize strings for comparison
-  const normalizeValues = (val: string) => val.trim().toLowerCase().replace(/[\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, ""); // Remove Tashkeel
+  const normalizeValues = (val: string) => {
+    return val
+      .trim()
+      .toLowerCase()
+      .replace(/[\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, "") // Remove Tashkeel
+      .replace(/[أإآ]/g, "ا") // Normalize Alef
+      .replace(/ة/g, "ه") // Normalize Taa Marbuta
+      .replace(/ى/g, "ي"); // Normalize Alef Maqsura (optional but helpful)
+  };
 
   const findVal = (row: any, keywords: string[]) => {
     const keys = Object.keys(row);
@@ -158,21 +166,21 @@ const App: React.FC = () => {
           phone: findVal(row, ["رقم الجوال", "الجوال", "الهاتف", "Mobile", "Phone", "Cell", "Mobile Number"]),
           age: findVal(row, ["العمر", "Age", "السن"]),
           nationality: findVal(row, ["الجنسية", "Nationality", "Country"]),
-          residencyStatus: findVal(row, ["حالة الإقامة", "الإقامة", "Residency", "Iqama Status", "نوع الإقامة"]),
-          jobAppliedFor: findVal(row, ["الوظيفة", "المسمى الوظيفي", "Job", "Position", "Applied Position", "الوظيفة المتقدم عليها"]),
+          residencyStatus: findVal(row, ["حالة الإقامة", "الإقامة", "Residency", "حالة الاقامة", "نوع الإقامة"]),
+          jobAppliedFor: findVal(row, ["الوظيفة", "المسمى الوظيفي", "Job", "Position", "Applied Position", "الوظيفة المراد التقدم عليها"]),
           currentlyEmployed: findVal(row, ["على رأس العمل", "Employed", "Current Employment"]),
-          fullTimeAvailability: findVal(row, ["تفرغ", "Availability", "Available", "هل أنت متفرغ"]),
-          militaryStatus: findVal(row, ["الحالة المهنية", "Status", "Military Status", "المهنة"]),
+          fullTimeAvailability: findVal(row, ["تفرغ", "Availability", "Available", "هل أنت متفرغ", "هل انت متفرغ للعمل"]),
+          militaryStatus: findVal(row, ["الحالة المهنية", "Status", "Military Status", "المهنة", "حالتك المهنية في الاحوال المدنية"]),
           socialStatus: findVal(row, ["الحالة الاجتماعية", "Social", "Marital Status"]),
-          yearsOfExperience: findVal(row, ["سنوات الخبرة", "الخبرة", "Experience", "Years of Experience", "Total Experience"]),
-          workedHajj: findVal(row, ["حج", "Hajj", "خبرة حج", "موسم الحج"]),
-          hasHealthCard: findVal(row, ["كرت صحي", "Health Card", "بطاقة صحية"]),
-          lastSalary: findVal(row, ["آخر راتب", "الراتب", "Salary", "Last Salary", "Current Salary"]),
-          hasTransportation: findVal(row, ["مواصلات", "Transportation", "سيارة", "Car"]),
-          englishLevel: findVal(row, ["مستوى اللغة", "اللغة الإنجليزية", "English", "English Level"]),
-          willingToWorkReqs: findVal(row, ["متطلبات العمل", "Requirements", "موافق على الشروط"]),
+          yearsOfExperience: findVal(row, ["سنوات الخبرة", "الخبرة", "Experience", "Years of Experience", "Total Experience", "عدد سنوات الخبرة"]),
+          workedHajj: findVal(row, ["حج", "Hajj", "خبرة حج", "موسم الحج", "هل سبق وعملت في موسم الحج"]),
+          hasHealthCard: findVal(row, ["كرت صحي", "Health Card", "بطاقة صحية", "هل يوجد كرت صحي"]),
+          lastSalary: findVal(row, ["آخر راتب", "الراتب", "Salary", "Last Salary", "Current Salary", "اخر راتب لك"]),
+          hasTransportation: findVal(row, ["مواصلات", "Transportation", "سيارة", "Car", "هل يتوفر مواصلات"]),
+          englishLevel: findVal(row, ["مستوى اللغة", "اللغة الإنجليزية", "English", "English Level", "مستوى اجادة اللغة الانجليزية"]),
+          willingToWorkReqs: findVal(row, ["متطلبات العمل", "Requirements", "موافق على الشروط", "مستعد لمتطلبات العمل"]),
           housingInfo: findVal(row, ["معلومات السكن", "السكن", "Housing", "Location", "Residence"]),
-          willingToInterviewInJeddah: findVal(row, ["جدة", "Jeddah", "مقابلة جدة"]),
+          willingToInterviewInJeddah: findVal(row, ["جدة", "Jeddah", "مقابلة جدة", "هل انت مستعد لعمل المقابلة في جدة"]),
           education: findVal(row, ["التعليم", "المؤهل", "Education", "Degree", "Qualification", "المؤهل العلمي"]),
         }));
 
