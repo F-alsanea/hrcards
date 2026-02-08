@@ -92,16 +92,30 @@ const App: React.FC = () => {
     }
   };
 
+  // Helper to normalize strings for comparison
+  const normalizeValues = (val: string) => val.trim().toLowerCase().replace(/[\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, ""); // Remove Tashkeel
+
   const findVal = (row: any, keywords: string[]) => {
     const keys = Object.keys(row);
-    const exactKey = keys.find(k => keywords.some(kw => k.trim() === kw.trim()));
+
+    // 1. Exact match (normalized)
+    const exactKey = keys.find(k => keywords.some(kw => normalizeValues(k) === normalizeValues(kw)));
     if (exactKey) return String(row[exactKey]);
+
+    // 2. Partial match (normalized)
     const partialKey = keys.find(k => keywords.some(kw => {
-      const cleanK = k.toLowerCase().trim();
-      const cleanKW = kw.toLowerCase().trim();
-      return cleanK.includes(cleanKW);
+      const cleanK = normalizeValues(k);
+      const cleanKW = normalizeValues(kw);
+      return cleanK.includes(cleanKW) || cleanKW.includes(cleanK);
     }));
-    return partialKey ? String(row[partialKey]) : "-";
+
+    if (partialKey) {
+      console.log(`Matched partial key: '${partialKey}' for keywords: [${keywords.join(', ')}]`);
+      return String(row[partialKey]);
+    }
+
+    console.warn(`No match found for keywords: [${keywords.join(', ')}]. Available keys:`, keys);
+    return "-";
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,78 +128,64 @@ const App: React.FC = () => {
     reader.onload = (e) => {
       let newCandidates: Candidate[] = [];
       try {
+        let jsonData: any[] = [];
+
         if (fileExt === 'xlsx' || fileExt === 'xls') {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-          if (jsonData.length === 0) {
-            alert("الملف فارغ أو لا يحتوي على بيانات صحيحة");
-            return;
-          }
-
-          newCandidates = jsonData.map((row, index) => ({
-            id: Date.now() + index, // More unique ID
-            fullName: findVal(row, ["الاسم الكامل", "الاسم", "Name", "Full Name"]),
-            phone: findVal(row, ["رقم الجوال", "الجوال", "الهاتف", "Mobile", "Phone"]),
-            age: findVal(row, ["العمر", "Age"]),
-            nationality: findVal(row, ["الجنسية", "Nationality"]),
-            residencyStatus: findVal(row, ["حالة الإقامة", "الإقامة", "Residency"]),
-            jobAppliedFor: findVal(row, ["الوظيفة", "المسمى الوظيفي", "Job", "Position"]),
-            currentlyEmployed: findVal(row, ["على رأس العمل", "Employed"]),
-            fullTimeAvailability: findVal(row, ["تفرغ", "Availability"]),
-            militaryStatus: findVal(row, ["الحالة المهنية", "Status"]),
-            socialStatus: findVal(row, ["الحالة الاجتماعية", "Social"]),
-            yearsOfExperience: findVal(row, ["سنوات الخبرة", "الخبرة", "Experience"]),
-            workedHajj: findVal(row, ["حج", "Hajj"]),
-            hasHealthCard: findVal(row, ["كرت صحي", "Health Card"]),
-            lastSalary: findVal(row, ["آخر راتب", "الراتب", "Salary"]),
-            hasTransportation: findVal(row, ["مواصلات", "Transportation"]),
-            englishLevel: findVal(row, ["مستوى اللغة", "اللغة الإنجليزية", "English"]),
-            willingToWorkReqs: findVal(row, ["متطلبات العمل", "Requirements"]),
-            housingInfo: findVal(row, ["معلومات السكن", "السكن", "Housing"]),
-            willingToInterviewInJeddah: findVal(row, ["جدة", "Jeddah"]),
-            education: findVal(row, ["التعليم", "المؤهل", "Education"]),
-          }));
+          jsonData = XLSX.utils.sheet_to_json(worksheet);
         } else {
+          // CSV or Text handling
           const text = e.target?.result as string;
           const workbook = XLSX.read(text, { type: 'string' });
-          const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]) as any[];
-          newCandidates = jsonData.map((row, index) => ({
-            id: Date.now() + index,
-            fullName: findVal(row, ["الاسم", "Name"]),
-            phone: findVal(row, ["الجوال", "Phone"]),
-            age: findVal(row, ["العمر", "Age"]),
-            nationality: findVal(row, ["الجنسية", "Nationality"]),
-            residencyStatus: findVal(row, ["الإقامة", "Residency"]),
-            jobAppliedFor: findVal(row, ["الوظيفة", "Job"]),
-            currentlyEmployed: findVal(row, ["على رأس العمل"]),
-            fullTimeAvailability: findVal(row, ["تفرغ"]),
-            militaryStatus: findVal(row, ["الحالة المهنية"]),
-            socialStatus: findVal(row, ["الحالة الاجتماعية"]),
-            yearsOfExperience: findVal(row, ["الخبرة"]),
-            workedHajj: findVal(row, ["حج"]),
-            hasHealthCard: findVal(row, ["كرت صحي"]),
-            lastSalary: findVal(row, ["راتب"]),
-            hasTransportation: findVal(row, ["مواصلات"]),
-            englishLevel: findVal(row, ["English"]),
-            willingToWorkReqs: findVal(row, ["متطلبات"]),
-            housingInfo: findVal(row, ["سكن"]),
-            willingToInterviewInJeddah: findVal(row, ["جدة"]),
-            education: findVal(row, ["التعليم"]),
-          }));
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          jsonData = XLSX.utils.sheet_to_json(worksheet);
         }
+
+        if (jsonData.length === 0) {
+          alert("الملف فارغ أو لا يحتوي على بيانات صحيحة");
+          return;
+        }
+
+        console.log("First row keys:", Object.keys(jsonData[0])); // Debug log
+
+        newCandidates = jsonData.map((row, index) => ({
+          id: Date.now() + index + Math.random(), // Ensure uniqueness
+          fullName: findVal(row, ["الاسم الكامل", "الاسم", "Name", "Full Name", "اسم المرشح", "Candidate Name"]),
+          phone: findVal(row, ["رقم الجوال", "الجوال", "الهاتف", "Mobile", "Phone", "Cell", "Mobile Number"]),
+          age: findVal(row, ["العمر", "Age", "السن"]),
+          nationality: findVal(row, ["الجنسية", "Nationality", "Country"]),
+          residencyStatus: findVal(row, ["حالة الإقامة", "الإقامة", "Residency", "Iqama Status", "نوع الإقامة"]),
+          jobAppliedFor: findVal(row, ["الوظيفة", "المسمى الوظيفي", "Job", "Position", "Applied Position", "الوظيفة المتقدم عليها"]),
+          currentlyEmployed: findVal(row, ["على رأس العمل", "Employed", "Current Employment"]),
+          fullTimeAvailability: findVal(row, ["تفرغ", "Availability", "Available", "هل أنت متفرغ"]),
+          militaryStatus: findVal(row, ["الحالة المهنية", "Status", "Military Status", "المهنة"]),
+          socialStatus: findVal(row, ["الحالة الاجتماعية", "Social", "Marital Status"]),
+          yearsOfExperience: findVal(row, ["سنوات الخبرة", "الخبرة", "Experience", "Years of Experience", "Total Experience"]),
+          workedHajj: findVal(row, ["حج", "Hajj", "خبرة حج", "موسم الحج"]),
+          hasHealthCard: findVal(row, ["كرت صحي", "Health Card", "بطاقة صحية"]),
+          lastSalary: findVal(row, ["آخر راتب", "الراتب", "Salary", "Last Salary", "Current Salary"]),
+          hasTransportation: findVal(row, ["مواصلات", "Transportation", "سيارة", "Car"]),
+          englishLevel: findVal(row, ["مستوى اللغة", "اللغة الإنجليزية", "English", "English Level"]),
+          willingToWorkReqs: findVal(row, ["متطلبات العمل", "Requirements", "موافق على الشروط"]),
+          housingInfo: findVal(row, ["معلومات السكن", "السكن", "Housing", "Location", "Residence"]),
+          willingToInterviewInJeddah: findVal(row, ["جدة", "Jeddah", "مقابلة جدة"]),
+          education: findVal(row, ["التعليم", "المؤهل", "Education", "Degree", "Qualification", "المؤهل العلمي"]),
+        }));
+
         setCandidates(prev => [...prev, ...newCandidates]); // Append new data
         setSelectedIndex(candidates.length);
         setViewMode(ViewMode.LIST);
         alert(`تم بنجاح معالجة البيانات واستيراد ${newCandidates.length} مرشح!`);
       } catch (err) {
-        console.error(err);
+        console.error("Excel processing error:", err);
         alert("حدث خطأ أثناء قراءة الملف، يرجى التأكد من الصيغة.");
       }
     };
+
 
     if (fileExt === 'xlsx' || fileExt === 'xls') {
       reader.readAsArrayBuffer(file);
